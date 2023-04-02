@@ -1,0 +1,19 @@
+[package]
+name = "graph_process_manager_core"
+version = "0.1.0"
+authors = ["Erwan Mahe"]
+edition = "2021"
+
+license = "Apache-2.0"
+description = "Utilities to explore parts of a tree-like or graph-like structure that is not known in advance"
+
+readme = "README.md"
+repository = "https://github.com/erwanM974/graph_process_manager_core"
+homepage = "https://github.com/erwanM974/graph_process_manager_core"
+
+keywords = ["graph", "tree", "process", "traversal", "heuristics"]
+
+
+[dependencies]
+maplit = "1.0.2"                                # for !hashset macro etc
+rand = "0.8.5"                                  # random number generation e.g. for traversal random priorities
