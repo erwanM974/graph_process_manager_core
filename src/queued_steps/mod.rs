@@ -15,18 +15,6 @@ limitations under the License.
 */
 
 
-use crate::config::AbstractConfiguration;
+pub mod step;
+pub mod queue;
 
-pub struct GenericStep<Config : AbstractConfiguration> {
-    pub parent_id : u32,
-    pub id_as_child : u32,
-    pub kind : Config::StepKind
-}
-
-impl<Config : AbstractConfiguration> GenericStep<Config> {
-    pub fn new(parent_id : u32,
-               id_as_child : u32,
-               kind : Config::StepKind) -> GenericStep<Config> {
-        return GenericStep{parent_id,id_as_child,kind};
-    }
-}

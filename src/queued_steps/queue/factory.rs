@@ -14,26 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+use crate::queued_steps::queue::generic::GenericProcessQueue;
+use crate::queued_steps::queue::strategy::QueueSearchStrategy;
 
-use crate::config::AbstractConfiguration;
-use crate::delegate::queue::generic::GenericProcessQueue;
-use crate::delegate::queue::strategy::QueueSearchStrategy;
+use crate::queued_steps::queue::q_bfs::BfsProcessQueue;
+use crate::queued_steps::queue::q_dfs::DfsProcessQueue;
+use crate::queued_steps::queue::q_hcs::HcsProcessQueue;
 
-use crate::delegate::queue::q_bfs::BFS_ProcessQueue;
-use crate::delegate::queue::q_dfs::DFS_ProcessQueue;
-use crate::delegate::queue::q_hcs::HCS_ProcessQueue;
-
-pub(crate) fn create_process_queue<Config : AbstractConfiguration + 'static>(strategy : &QueueSearchStrategy)
-            -> Box< dyn GenericProcessQueue<Config> > {
+pub fn create_process_queue<T : 'static>(strategy : &QueueSearchStrategy)
+        -> Box< dyn GenericProcessQueue<T> > {
     match strategy {
         QueueSearchStrategy::BFS => {
-            return Box::new(BFS_ProcessQueue::<Config>::new() );
+            Box::new(BfsProcessQueue::<T>::new() )
         },
         QueueSearchStrategy::DFS => {
-            return Box::new(DFS_ProcessQueue::<Config>::new() );
+            Box::new(DfsProcessQueue::<T>::new() )
         },
         QueueSearchStrategy::HCS => {
-            return Box::new(HCS_ProcessQueue::<Config>::new() );
+            Box::new(HcsProcessQueue::<T>::new() )
         }
     }
 }

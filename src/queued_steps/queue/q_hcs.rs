@@ -17,22 +17,21 @@ limitations under the License.
 
 use std::collections::VecDeque;
 
-use crate::config::AbstractConfiguration;
-use crate::step::GenericStep;
-use crate::delegate::queue::generic::GenericProcessQueue;
+use crate::queued_steps::step::GenericStep;
+use crate::queued_steps::queue::generic::GenericProcessQueue;
 
-pub struct HCS_ProcessQueue<Config : AbstractConfiguration> {
-    queue : VecDeque< (u32,Vec<GenericStep<Config>>) >,
+pub struct HcsProcessQueue<T> {
+    queue : VecDeque< (u32,Vec<GenericStep<T>>) >,
     last_reached_has_no_child : bool
 }
 
 
-impl<Config : AbstractConfiguration> HCS_ProcessQueue<Config> {
+impl<T> HcsProcessQueue<T> {
 
-    fn extract_dfs(&mut self) -> Option<(GenericStep<Config>,Option<u32>)> {
+    fn extract_dfs(&mut self) -> Option<(GenericStep<T>,Option<u32>)> {
         match self.queue.pop_back() {
             None => {
-                return None;
+                None
             },
             Some( (parent_id,mut rem) ) => {
                 match rem.pop() {
@@ -40,11 +39,11 @@ impl<Config : AbstractConfiguration> HCS_ProcessQueue<Config> {
                         panic!("should never have an empty vector here");
                     },
                     Some( got_step ) => {
-                        if rem.len() > 0 {
-                            self.queue.push_back((parent_id,rem) );
-                            return Some( (got_step,None) );
+                        if rem.is_empty() {
+                            Some((got_step, Some(parent_id)))
                         } else {
-                            return Some( (got_step,Some(parent_id)) );
+                            self.queue.push_back((parent_id, rem));
+                            Some((got_step, None))
                         }
                     }
                 }
@@ -52,10 +51,10 @@ impl<Config : AbstractConfiguration> HCS_ProcessQueue<Config> {
         }
     }
 
-    fn extract_bfs(&mut self) -> Option<(GenericStep<Config>,Option<u32>)> {
+    fn extract_bfs(&mut self) -> Option<(GenericStep<T>,Option<u32>)> {
         match self.queue.pop_front() {
             None => {
-                return None;
+                None
             },
             Some( (parent_id,mut rem) ) => {
                 match rem.pop() {
@@ -63,11 +62,11 @@ impl<Config : AbstractConfiguration> HCS_ProcessQueue<Config> {
                         panic!("should never have an empty vector here");
                     },
                     Some( got_step ) => {
-                        if rem.len() > 0 {
-                            self.queue.push_front((parent_id,rem) );
-                            return Some( (got_step,None) );
+                        if rem.is_empty() {
+                            Some( (got_step,Some(parent_id)) )
                         } else {
-                            return Some( (got_step,Some(parent_id)) );
+                            self.queue.push_front((parent_id,rem) );
+                            Some( (got_step,None) )
                         }
                     }
                 }
@@ -77,29 +76,29 @@ impl<Config : AbstractConfiguration> HCS_ProcessQueue<Config> {
 
 }
 
-impl<Config : AbstractConfiguration> GenericProcessQueue<Config> for HCS_ProcessQueue<Config> {
+impl<T> GenericProcessQueue<T> for HcsProcessQueue<T> {
 
-    fn new() -> HCS_ProcessQueue<Config> {
-        return HCS_ProcessQueue{queue:VecDeque::new(),
-            last_reached_has_no_child:true};
+    fn new() -> HcsProcessQueue<T> {
+        HcsProcessQueue{queue:VecDeque::new(),
+            last_reached_has_no_child:true}
     }
 
-    fn dequeue(&mut self) -> Option<(GenericStep<Config>,Option<u32>)> {
+    fn dequeue(&mut self) -> Option<(GenericStep<T>,Option<u32>)> {
         match self.last_reached_has_no_child {
             true => {
                 self.last_reached_has_no_child = false;
-                return self.extract_bfs();
+                self.extract_bfs()
             },
             false => {
-                return self.extract_dfs();
+                self.extract_dfs()
             }
         }
     }
 
     fn enqueue(&mut self,
                          parent_id : u32,
-                         to_enqueue : Vec<GenericStep<Config>>) {
-        if to_enqueue.len() > 0 {
+                         to_enqueue : Vec<GenericStep<T>>) {
+        if !to_enqueue.is_empty() {
             self.queue.push_back( (parent_id,to_enqueue) );
         }
     }

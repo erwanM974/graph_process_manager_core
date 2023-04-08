@@ -15,26 +15,26 @@ limitations under the License.
 */
 
 
+use std::collections::VecDeque;
 
-use crate::config::AbstractConfiguration;
-use crate::step::GenericStep;
-use crate::delegate::queue::generic::GenericProcessQueue;
+use crate::queued_steps::step::GenericStep;
+use crate::queued_steps::queue::generic::GenericProcessQueue;
 
 
-pub struct DFS_ProcessQueue<Config : AbstractConfiguration> {
-    queue : Vec< (u32,Vec<GenericStep<Config>>) >
+pub struct BfsProcessQueue<T> {
+    queue : VecDeque< (u32,Vec<GenericStep<T>>) >
 }
 
-impl<Config : AbstractConfiguration> GenericProcessQueue<Config> for DFS_ProcessQueue<Config> {
+impl<T> GenericProcessQueue<T> for BfsProcessQueue<T> {
 
-    fn new() -> DFS_ProcessQueue<Config> {
-        return DFS_ProcessQueue{queue:Vec::new()};
+    fn new() -> BfsProcessQueue<T> {
+        BfsProcessQueue{queue:VecDeque::new()}
     }
 
-    fn dequeue(&mut self) -> Option<(GenericStep<Config>,Option<u32>)> {
-        match self.queue.pop() {
+    fn dequeue(&mut self) -> Option<(GenericStep<T>,Option<u32>)> {
+        match self.queue.pop_front() {
             None => {
-                return None;
+                None
             },
             Some( (parent_id,mut rem) ) => {
                 match rem.pop() {
@@ -42,11 +42,11 @@ impl<Config : AbstractConfiguration> GenericProcessQueue<Config> for DFS_Process
                         panic!("should never have an empty vector here");
                     },
                     Some( got_step ) => {
-                        if rem.len() > 0 {
-                            self.queue.push((parent_id,rem) );
-                            return Some( (got_step,None) );
+                        if rem.is_empty() {
+                            Some( (got_step,Some(parent_id)) )
                         } else {
-                            return Some( (got_step,Some(parent_id)) );
+                            self.queue.push_front((parent_id,rem) );
+                            Some( (got_step,None) )
                         }
                     }
                 }
@@ -55,16 +55,14 @@ impl<Config : AbstractConfiguration> GenericProcessQueue<Config> for DFS_Process
     }
 
     fn enqueue(&mut self,
-                         parent_id : u32,
-                         to_enqueue : Vec<GenericStep<Config>>) {
-        if to_enqueue.len() > 0 {
-            self.queue.push( (parent_id,to_enqueue) );
+               parent_id : u32,
+               to_enqueue : Vec<GenericStep<T>>) {
+        if !to_enqueue.is_empty() {
+            self.queue.push_back( (parent_id,to_enqueue) );
         }
     }
 
     fn set_last_reached_has_no_child(&mut self) {}
+
 }
-
-
-
 

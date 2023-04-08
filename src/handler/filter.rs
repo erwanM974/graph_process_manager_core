@@ -15,23 +15,12 @@ limitations under the License.
 */
 
 
-use std::collections::HashSet;
 
-use crate::config::AbstractConfiguration;
+pub trait AbstractFilter<Criterion,Elimination> : std::string::ToString {
 
+    fn apply_filter(&self,
+                    depth : u32,
+                    node_counter : u32,
+                    criterion : &Criterion) -> Option<Elimination>;
 
-
-pub struct GenericNode<Config : AbstractConfiguration> {
-    pub kind : Config::NodeKind,
-    pub remaining_ids_to_process : HashSet<u32>,
-    pub depth : u32
 }
-
-impl<Config : AbstractConfiguration> GenericNode<Config> {
-    pub fn new(kind : Config::NodeKind,
-               remaining_ids_to_process : HashSet<u32>,
-               depth : u32) -> GenericNode<Config> {
-        return GenericNode{kind,remaining_ids_to_process,depth};
-    }
-}
-

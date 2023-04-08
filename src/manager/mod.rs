@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+pub mod config;
+pub mod logger;
 pub mod verdict;
 pub mod manager;
-pub mod handler;
-pub mod retval;

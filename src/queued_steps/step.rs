@@ -15,25 +15,17 @@ limitations under the License.
 */
 
 
-pub enum QueueSearchStrategy {
-    BFS, // breadth first search
-    DFS, // depth first search
-    HCS  // high coverage search
+
+pub struct GenericStep<T> {
+    pub parent_id : u32,
+    pub id_as_child : u32,
+    pub kind : T
 }
 
-impl std::string::ToString for QueueSearchStrategy {
-    fn to_string(&self) -> String {
-        match self {
-            QueueSearchStrategy::BFS => {
-                return "BreadthFirstSearch".to_string();
-            },
-            QueueSearchStrategy::DFS => {
-                return "DepthFirstSearch".to_string();
-            },
-            QueueSearchStrategy::HCS => {
-                return "HighCoverageSearch".to_string();
-            }
-        }
+impl<T> GenericStep<T> {
+    pub fn new(parent_id : u32,
+               id_as_child : u32,
+               kind : T) -> GenericStep<T> {
+        GenericStep{parent_id,id_as_child,kind}
     }
 }
-

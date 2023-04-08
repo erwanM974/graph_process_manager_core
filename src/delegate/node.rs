@@ -15,17 +15,19 @@ limitations under the License.
 */
 
 
-use crate::config::AbstractConfiguration;
+use std::collections::HashSet;
 
-pub struct GenericProcessReturnValue<Config : AbstractConfiguration> {
-    pub node_count : u32,
-    pub verdict : Config::GlobalVerdict
+
+
+pub struct GenericNode<Node> {
+    pub kind : Node,
+    pub remaining_ids_to_process : HashSet<u32>,
+    pub depth : u32
 }
 
-impl<Config : AbstractConfiguration> GenericProcessReturnValue<Config> {
-    pub fn new(node_count : u32,
-               verdict : Config::GlobalVerdict)
-               -> GenericProcessReturnValue<Config> {
-        return GenericProcessReturnValue{node_count,verdict};
+impl<Node> GenericNode<Node> {
+    pub fn new(kind: Node, remaining_ids_to_process: HashSet<u32>, depth: u32) -> Self {
+        GenericNode { kind, remaining_ids_to_process, depth }
     }
 }
+

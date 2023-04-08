@@ -16,9 +16,10 @@ limitations under the License.
 
 
 
-use crate::config::AbstractConfiguration;
 use crate::delegate::priorities::GenericProcessPriorities;
-use crate::delegate::queue::strategy::QueueSearchStrategy;
+use crate::handler::filter::AbstractFilter;
+use crate::manager::config::AbstractConfiguration;
+use crate::queued_steps::queue::strategy::QueueSearchStrategy;
 
 pub trait AbstractProcessLogger<Config : AbstractConfiguration> {
 
@@ -29,9 +30,9 @@ pub trait AbstractProcessLogger<Config : AbstractConfiguration> {
 
     fn log_parameterization(&mut self,
                             strategy : &QueueSearchStrategy,
-                            filters : &Vec<Config::Filter>,
-                            priorities : &GenericProcessPriorities<Config>,
-                            process_parameterization : &Config::ProcessParameterization);
+                            filters : &[Box<dyn AbstractFilter<Config::FilterCriterion,Config::FilterEliminationKind>>],
+                            priorities : &GenericProcessPriorities<Config::Priorities>,
+                            parameterization : &Config::ProcessParameterization);
 
     fn log_filtered(&mut self,
                     context : &Config::ProcessContext,
@@ -41,6 +42,7 @@ pub trait AbstractProcessLogger<Config : AbstractConfiguration> {
 
     fn log_new_node(&mut self,
                     context : &Config::ProcessContext,
+                    parameterization : &Config::ProcessParameterization,
                     new_state_id : u32,
                     new_node : &Config::NodeKind);
 

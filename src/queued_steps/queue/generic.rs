@@ -15,10 +15,9 @@ limitations under the License.
 */
 
 
-use crate::config::AbstractConfiguration;
-use crate::step::GenericStep;
+use crate::queued_steps::step::GenericStep;
 
-pub trait GenericProcessQueue<Config : AbstractConfiguration> {
+pub trait GenericProcessQueue<T> {
 
     fn new() -> Self where Self : Sized;
 
@@ -28,11 +27,11 @@ pub trait GenericProcessQueue<Config : AbstractConfiguration> {
        then return its ID
        so that we may then forget it / erase from memory
           **/
-    fn dequeue(&mut self) -> Option<(GenericStep<Config>,Option<u32>)>;
+    fn dequeue(&mut self) -> Option<(GenericStep<T>,Option<u32>)>;
 
     fn enqueue(&mut self,
                parent_id : u32,
-               to_enqueue : Vec<GenericStep<Config>>);
+               to_enqueue : Vec<GenericStep<T>>);
 
     fn set_last_reached_has_no_child(&mut self);
 

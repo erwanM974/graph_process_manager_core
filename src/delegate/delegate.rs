@@ -19,85 +19,52 @@ use maplit::hashmap;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 
-use crate::config::{AbstractConfiguration, AbstractStepKind};
-use crate::delegate::filter::AbstractFilter;
+use crate::delegate::node::GenericNode;
 
-use crate::delegate::priorities::{GenericProcessPriorities};
-use crate::delegate::queue::factory::create_process_queue;
-use crate::delegate::queue::generic::GenericProcessQueue;
-use crate::delegate::queue::strategy::QueueSearchStrategy;
-use crate::node::GenericNode;
-use crate::step::GenericStep;
+use crate::delegate::priorities::{AbstractPriorities, GenericProcessPriorities};
+use crate::queued_steps::queue::factory::create_process_queue;
+use crate::queued_steps::queue::generic::GenericProcessQueue;
+use crate::queued_steps::queue::strategy::QueueSearchStrategy;
+use crate::queued_steps::step::GenericStep;
 
 
-pub struct GenericProcessDelegate<Config : AbstractConfiguration> {
+pub struct GenericProcessDelegate<Step,Node,Priorities : AbstractPriorities<Step>> {
     strategy : QueueSearchStrategy,
-    filters : Vec<Config::Filter>,
-    priorities : GenericProcessPriorities<Config>,
-    memorized_states : HashMap<u32,GenericNode<Config>>,
-    process_queue : Box< dyn GenericProcessQueue<Config> >
+    priorities : GenericProcessPriorities<Priorities>,
+    memorized_states : HashMap<u32,GenericNode<Node>>,
+    process_queue : Box< dyn GenericProcessQueue<Step> >
 }
 
-impl<Config : 'static + AbstractConfiguration> GenericProcessDelegate<Config> {
-
-    pub fn new(strategy : QueueSearchStrategy,
-               filters : Vec<Config::Filter>,
-               priorities : GenericProcessPriorities<Config>)
-            -> GenericProcessDelegate<Config> {
+impl<Step : 'static, Node, Priorities: AbstractPriorities<Step>> GenericProcessDelegate<Step, Node, Priorities> {
+    pub fn new(strategy: QueueSearchStrategy,
+               priorities: GenericProcessPriorities<Priorities>) -> Self {
         let process_queue = create_process_queue(&strategy);
-        return GenericProcessDelegate{
+        GenericProcessDelegate{
             strategy,
-            filters,
             priorities,
             memorized_states:hashmap!{},
-            process_queue};
+            process_queue}
     }
 
     pub fn get_strategy(&self) -> &QueueSearchStrategy {
-        return &self.strategy;
+        &self.strategy
     }
 
-    pub fn get_filters(&self) -> &Vec<Config::Filter> {
-        return &self.filters;
+    pub fn get_priorities(&self) -> &GenericProcessPriorities<Priorities> {
+        &self.priorities
     }
 
-    pub fn get_priorities(&self) -> &GenericProcessPriorities<Config> {
-        return &self.priorities;
+    pub fn pick_memorized_state(&mut self, id:u32) -> GenericNode<Node> {
+        self.memorized_states.remove(&id).unwrap()
     }
 
-    pub fn pick_memorized_state(&mut self, id:u32) -> GenericNode<Config> {
-        return self.memorized_states.remove(&id).unwrap();
-    }
-
-    pub fn remember_state(&mut self, id:u32, state : GenericNode<Config>) {
+    pub fn remember_state(&mut self, id:u32, state : GenericNode<Node>) {
         assert!(!self.memorized_states.contains_key(&id));
         self.memorized_states.insert( id, state );
     }
 
-    pub fn extract_from_queue(&mut self) -> Option<GenericStep<Config>> {
-        match self.process_queue.dequeue() {
-            None => {
-                return None;
-            },
-            Some( (step,_) ) => {
-                return Some(step);
-            }
-        }
-    }
-
-    pub fn apply_filters(&self,
-                         depth : u32,
-                         node_counter : u32,
-                         criterion : &Config::FilterCriterion) -> Option<Config::FilterEliminationKind> {
-        for filter in &self.filters {
-            match filter.apply_filter(depth,node_counter,criterion) {
-                None => {},
-                Some( elim_kind) => {
-                    return Some(elim_kind);
-                }
-            }
-        }
-        return None;
+    pub fn extract_from_queue(&mut self) -> Option<GenericStep<Step>> {
+        self.process_queue.dequeue().map(|(step,_)| step)
     }
 
     pub fn queue_set_last_reached_has_no_child(&mut self) {
@@ -105,14 +72,14 @@ impl<Config : 'static + AbstractConfiguration> GenericProcessDelegate<Config> {
     }
 
     fn reorganize_by_priority(
-        priorities : &Config::Priorities,
-        steps : Vec<GenericStep<Config>>,
-        randomize : bool) -> Vec<GenericStep<Config>> {
-        let mut reorganized : Vec<GenericStep<Config>> = vec![];
+        priorities : &Priorities,
+        steps : Vec<GenericStep<Step>>,
+        randomize : bool) -> Vec<GenericStep<Step>> {
+        let mut reorganized : Vec<GenericStep<Step>> = vec![];
         {
-            let mut by_priorities : HashMap<i32,Vec<GenericStep<Config>>> = hashmap!{};
+            let mut by_priorities : HashMap<i32,Vec<GenericStep<Step>>> = hashmap!{};
             for child in steps {
-                let priority = child.kind.get_priority(priorities);
+                let priority = priorities.get_priority_of_step(&child.kind);
                 // ***
                 match by_priorities.get_mut(&priority) {
                     None => {
@@ -138,32 +105,20 @@ impl<Config : 'static + AbstractConfiguration> GenericProcessDelegate<Config> {
                 }
             }
         }
-        return reorganized;
+        // ***
+        reorganized
     }
 
     pub fn enqueue_new_steps(&mut self,
                              parent_id : u32,
-                             to_enqueue : Vec<GenericStep<Config>>) {
+                             to_enqueue : Vec<GenericStep<Step>>) {
         let reorganized = Self::reorganize_by_priority(&self.priorities.specific,
                                                  to_enqueue,
                                                  self.priorities.randomize);
         self.process_queue.enqueue(parent_id,reorganized);
     }
 
-    /*
-    pub fn get_basic_options_as_strings(&self) -> Vec<String> {
-        let mut options_str : Vec<String> = Vec::new();
-        options_str.push( format!("strategy={}", &self.strategy.to_string()) );
-        options_str.push( format!("priorities={}", &self.priorities.to_string()) );
-        {
-            let mut filters_strs : Vec<String> = self.filters.iter()
-                .map(|f| f.to_string()).collect();
-            options_str.push( format!("filters=[{}]", filters_strs.join(",")) );
-        }
-        return options_str;
-    }*/
 }
-
 
 
 

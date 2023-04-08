@@ -15,33 +15,33 @@ limitations under the License.
 */
 
 
-use std::collections::HashMap;
-
-
-use crate::config::{AbstractConfiguration, AbstractStepKind};
-use crate::step::GenericStep;
 
 
 
+pub trait AbstractPriorities<Step> : Sized + std::string::ToString {
 
-pub struct GenericProcessPriorities<Config : AbstractConfiguration> {
-    pub specific : Config::Priorities,
+    fn get_priority_of_step(&self, step : &Step) -> i32;
+
+}
+
+pub struct GenericProcessPriorities<Priorities : std::string::ToString> {
+    pub specific : Priorities,
     pub randomize : bool
 }
 
-impl <Config : AbstractConfiguration> GenericProcessPriorities<Config> {
-    pub fn new(specific : Config::Priorities,
-               randomize : bool) -> GenericProcessPriorities<Config> {
-        return GenericProcessPriorities{specific,randomize};
+impl<Priorities : std::string::ToString> std::string::ToString for GenericProcessPriorities<Priorities> {
+    fn to_string(&self) -> String {
+        if self.randomize {
+            format!("randomize {}", self.specific.to_string())
+        } else {
+            self.specific.to_string()
+        }
     }
 }
 
-impl<Config : AbstractConfiguration> std::string::ToString for GenericProcessPriorities<Config> {
-    fn to_string(&self) -> String {
-        if self.randomize {
-            return format!("randomize {}", self.specific.to_string());
-        } else {
-            return self.specific.to_string();
-        }
+
+impl<Priorities : std::string::ToString> GenericProcessPriorities<Priorities> {
+    pub fn new(specific: Priorities, randomize: bool) -> Self {
+        GenericProcessPriorities { specific, randomize }
     }
 }

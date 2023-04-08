@@ -15,15 +15,25 @@ limitations under the License.
 */
 
 
-
-use crate::config::AbstractConfiguration;
-
-
-pub trait AbstractFilter<Config : AbstractConfiguration> : Sized + std::string::ToString {
-
-    fn apply_filter(&self,
-                    depth : u32,
-                    node_counter : u32,
-                    criterion : &Config::FilterCriterion) -> Option<Config::FilterEliminationKind>;
-
+pub enum QueueSearchStrategy {
+    BFS, // breadth first search
+    DFS, // depth first search
+    HCS  // high coverage search
 }
+
+impl std::string::ToString for QueueSearchStrategy {
+    fn to_string(&self) -> String {
+        match self {
+            QueueSearchStrategy::BFS => {
+                "BreadthFirstSearch".to_string()
+            },
+            QueueSearchStrategy::DFS => {
+                "DepthFirstSearch".to_string()
+            },
+            QueueSearchStrategy::HCS => {
+                "HighCoverageSearch".to_string()
+            }
+        }
+    }
+}
+

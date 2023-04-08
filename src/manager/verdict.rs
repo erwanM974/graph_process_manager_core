@@ -14,14 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-use crate::config::AbstractConfiguration;
 
 
-pub trait AbstractGlobalVerdict<Config : AbstractConfiguration> : Sized + std::string::ToString {
+
+pub trait AbstractLocalVerdict<Context,Node> {
+
+    fn get_local_verdict(context : &Context, node : &Node) -> Self;
+
+}
+
+
+pub trait AbstractGlobalVerdict<LocalVerdict> : Sized + std::string::ToString {
+
+    fn is_verdict_pertinent_for_process() -> bool;
 
     fn get_baseline_verdict() -> Self;
 
-    fn update_with_local_verdict(self, local_verdict : &Config::LocalVerdict) -> Self;
+    fn update_with_local_verdict(self, local_verdict : &LocalVerdict) -> Self;
 
     fn is_goal_reached(&self, goal : &Option<Self>) -> bool;
 
