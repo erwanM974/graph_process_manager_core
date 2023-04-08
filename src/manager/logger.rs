@@ -23,11 +23,6 @@ use crate::queued_steps::queue::strategy::QueueSearchStrategy;
 
 pub trait AbstractProcessLogger<Config : AbstractConfiguration> {
 
-    fn log_initialize(&mut self,
-                context : &Config::ProcessContext,
-                init_state_id : u32,
-                init_node : &Config::NodeKind);
-
     fn log_parameterization(&mut self,
                             strategy : &QueueSearchStrategy,
                             filters : &[Box<dyn AbstractFilter<Config::FilterCriterion,Config::FilterEliminationKind>>],

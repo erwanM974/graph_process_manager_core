@@ -17,7 +17,7 @@ limitations under the License.
 
 
 
-pub trait AbstractLocalVerdict<Context,Node> {
+pub trait AbstractLocalVerdict<Context,Node> : std::string::ToString {
 
     fn get_local_verdict(context : &Context, node : &Node) -> Self;
 

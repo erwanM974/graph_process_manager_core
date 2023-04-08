@@ -89,7 +89,7 @@ impl<Config : 'static + AbstractConfiguration> GenericProcessManager<Config> {
         let mut node_counter : u32 = 0;
 
         self.loggers_parameterization();
-        self.loggers_initialize(next_state_id,&init_node_kind);
+        self.loggers_new_node_added(next_state_id,&init_node_kind);
 
         let mut global_verdict = Config::GlobalVerdict::get_baseline_verdict();
 
@@ -289,14 +289,6 @@ impl<Config : 'static + AbstractConfiguration> GenericProcessManager<Config> {
             logger.log_verdict(&self.process_context,
                                parent_state_id,
                                local_verdict);
-        }
-    }
-
-    fn loggers_initialize(&mut self, init_state_id : u32, init_node : &Config::NodeKind) {
-        for logger in self.loggers.iter_mut() {
-            (*logger).log_initialize(&self.process_context,
-                               init_state_id,
-                               init_node);
         }
     }
 
