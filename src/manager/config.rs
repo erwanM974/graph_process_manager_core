@@ -18,26 +18,23 @@ limitations under the License.
 use std::hash::Hash;
 use crate::delegate::priorities::AbstractPriorities;
 use crate::handler::handler::AbstractProcessHandler;
-use crate::manager::verdict::{AbstractGlobalVerdict, AbstractLocalVerdict};
+use crate::manager::verdict::AbstractGlobalVerdict;
 
-pub trait AbstractConfiguration : Sized {
-    type ProcessContext;
-    type ProcessParameterization : AbstractProcessParameterization;
+pub trait AbstractProcessConfiguration : Sized {
+    type Context;
+    type Parameterization : AbstractProcessParameterization;
     // ***
     type NodeKind : AbstractNodeKind;
     type StepKind;
     type Priorities : AbstractPriorities<Self::StepKind>;
     // ***
-    type FilterCriterion;
+    type FilterCriterion : std::string::ToString;
     type FilterEliminationKind : std::string::ToString;
     // ***
-    type LocalVerdict : AbstractLocalVerdict<Self::ProcessContext,Self::NodeKind>;
+    type LocalVerdict : std::string::ToString;
     type GlobalVerdict : AbstractGlobalVerdict<Self::LocalVerdict>;
     // ***
-    type ProcessHandler : AbstractProcessHandler<Self::ProcessContext,
-        Self::StepKind,
-        Self::NodeKind,
-        Self::FilterCriterion>;
+    type ProcessHandler : AbstractProcessHandler<Self>;
 }
 
 

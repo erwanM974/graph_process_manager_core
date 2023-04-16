@@ -17,25 +17,41 @@ limitations under the License.
 
 
 use crate::delegate::node::GenericNode;
+use crate::manager::config::AbstractProcessConfiguration;
 use crate::queued_steps::step::GenericStep;
 
-pub trait AbstractProcessHandler<Context,Step,Node,Criterion> {
+pub trait AbstractProcessHandler<Config : AbstractProcessConfiguration> {
 
-    fn process_new_step(context : &Context,
-                        parent_state : &GenericNode<Node>,
-                        step_to_process : &GenericStep<Step>,
-                        new_state_id : u32,
-                        node_counter : u32) -> Node;
+    fn process_new_step(context : &Config::Context,
+                        param : &Config::Parameterization,
+                        parent_node : &GenericNode<Config::NodeKind>,
+                        step_to_process : &GenericStep<Config::StepKind>,
+                        new_node_id : u32,
+                        node_counter : u32) -> Config::NodeKind;
 
-    fn get_criterion(context : &Context,
-                     parent_state : &GenericNode<Node>,
-                     step_to_process : &GenericStep<Step>,
-                     new_state_id : u32,
-                     node_counter : u32) -> Criterion;
+    fn get_criterion(context : &Config::Context,
+                     param : &Config::Parameterization,
+                     parent_node : &GenericNode<Config::NodeKind>,
+                     step_to_process : &GenericStep<Config::StepKind>,
+                     new_node_id : u32,
+                     node_counter : u32) -> Config::FilterCriterion;
 
-    fn collect_next_steps(context : &Context,
-                          parent_state_id : u32,
-                          parent_node_kind : &Node) -> (u32,Vec<GenericStep<Step>>);
+    fn collect_next_steps(context : &Config::Context,
+                          param : &Config::Parameterization,
+                          parent_node_id : u32,
+                          parent_node_kind : &Config::NodeKind) -> (u32,Vec<GenericStep<Config::StepKind>>);
+
+    fn get_local_verdict_when_no_child(context : &Config::Context,
+                                       param : &Config::Parameterization,
+                                       node_kind : &Config::NodeKind) -> Config::LocalVerdict;
+
+    fn get_local_verdict_from_static_analysis(context : &Config::Context,
+                                              param : &Config::Parameterization,
+                                              node_kind : &Config::NodeKind) -> Config::LocalVerdict;
+
+    fn pursue_process_after_static_verdict(context : &Config::Context,
+                                           param : &Config::Parameterization,
+                                           loc_verd : &Config::LocalVerdict) -> bool;
 
 }
 

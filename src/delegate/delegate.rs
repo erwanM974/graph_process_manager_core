@@ -54,8 +54,12 @@ impl<Step : 'static, Node, Priorities: AbstractPriorities<Step>> GenericProcessD
         &self.priorities
     }
 
-    pub fn pick_memorized_state(&mut self, id:u32) -> GenericNode<Node> {
+    pub fn pop_memorized_state(&mut self, id:u32) -> GenericNode<Node> {
         self.memorized_states.remove(&id).unwrap()
+    }
+
+    pub fn peek_memorized_state(&self, id:u32) -> &GenericNode<Node> {
+        self.memorized_states.get(&id).unwrap()
     }
 
     pub fn remember_state(&mut self, id:u32, state : GenericNode<Node>) {
