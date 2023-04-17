@@ -15,57 +15,57 @@ limitations under the License.
 */
 
 
-
 use crate::delegate::priorities::GenericProcessPriorities;
 use crate::handler::filter::AbstractFilter;
 use crate::manager::config::AbstractProcessConfiguration;
 use crate::queued_steps::queue::strategy::QueueSearchStrategy;
 
-pub trait AbstractProcessLogger<Config : AbstractProcessConfiguration> {
+pub trait AbstractProcessLogger<Conf : AbstractProcessConfiguration> {
 
     fn log_initialize(&mut self);
 
     fn log_parameterization(&mut self,
                             strategy : &QueueSearchStrategy,
-                            filters : &[Box<dyn AbstractFilter<Config::FilterCriterion,Config::FilterEliminationKind>>],
-                            priorities : &GenericProcessPriorities<Config::Priorities>,
-                            parameterization : &Config::Parameterization);
+                            filters : &[Box<dyn AbstractFilter<Conf::FilterCriterion,Conf::FilterEliminationKind>>],
+                            priorities : &GenericProcessPriorities<Conf::Priorities>,
+                            parameterization : &Conf::Parameterization);
 
     fn log_filtered(&mut self,
-                    context : &Config::Context,
+                    context : &Conf::Context,
                     parent_node_id : u32,
                     new_node_id : u32,
-                    elim_kind : &Config::FilterEliminationKind);
+                    elim_kind : &Conf::FilterEliminationKind);
 
     fn log_new_node(&mut self,
-                    context : &Config::Context,
-                    param : &Config::Parameterization,
+                    context : &Conf::Context,
+                    param : &Conf::Parameterization,
                     new_node_id : u32,
-                    new_node : &Config::NodeKind);
+                    new_node : &Conf::NodeKind);
 
     fn log_new_step(&mut self,
-                    context : &Config::Context,
-                    param : &Config::Parameterization,
+                    context : &Conf::Context,
+                    param : &Conf::Parameterization,
                     origin_node_id : u32,
                     target_node_id : u32,
-                    step : &Config::StepKind,
-                    target_node : &Config::NodeKind);
+                    step : &Conf::StepKind,
+                    target_node : &Conf::NodeKind,
+                    target_depth : u32);
 
     fn log_verdict(&mut self,
-                   context : &Config::Context,
-                   param : &Config::Parameterization,
+                   context : &Conf::Context,
+                   param : &Conf::Parameterization,
                    parent_node_id : u32,
-                   verdict : &Config::LocalVerdict);
+                   verdict : &Conf::LocalVerdict);
 
     fn log_terminate(&mut self,
-                     global_verdict : &Config::GlobalVerdict);
+                     global_verdict : &Conf::GlobalVerdict);
 
     fn log_notify_terminal_node_reached(&mut self,
-                                        context : &Config::Context,
+                                        context : &Conf::Context,
                                         node_id : u32);
 
     fn log_notify_last_child_of_node_processed(&mut self,
-                                               context : &Config::Context,
+                                               context : &Conf::Context,
                                                parent_node_id : u32);
 
 }

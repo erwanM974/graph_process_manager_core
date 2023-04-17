@@ -24,16 +24,16 @@ use crate::manager::logger::AbstractProcessLogger;
 use crate::manager::verdict::AbstractGlobalVerdict;
 
 
-pub struct GenericProcessManager<Config : AbstractProcessConfiguration> {
-    context : Config::Context,
-    param : Config::Parameterization,
+pub struct GenericProcessManager<Conf : AbstractProcessConfiguration> {
+    context : Conf::Context,
+    param : Conf::Parameterization,
     // ***
-    delegate : GenericProcessDelegate<Config::StepKind,Config::NodeKind,Config::Priorities>,
-    filters : Vec<Box<dyn AbstractFilter<Config::FilterCriterion,Config::FilterEliminationKind>>>,
-    loggers : Vec<Box< dyn AbstractProcessLogger<Config>>>,
-    goal : Option<Config::GlobalVerdict>,
+    delegate : GenericProcessDelegate<Conf::StepKind,Conf::NodeKind,Conf::Priorities>,
+    filters : Vec<Box<dyn AbstractFilter<Conf::FilterCriterion,Conf::FilterEliminationKind>>>,
+    loggers : Vec<Box< dyn AbstractProcessLogger<Conf>>>,
+    goal : Option<Conf::GlobalVerdict>,
     // ***
-    memoized : Option<HashMap<Config::NodeKind,u32>>,
+    memoized : Option<HashMap<Conf::NodeKind,u32>>,
     // ***
     has_filtered_nodes : bool,
     node_has_processed_child : HashSet<u32>
@@ -41,17 +41,17 @@ pub struct GenericProcessManager<Config : AbstractProcessConfiguration> {
 
 
 
-impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Config> {
+impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> {
 
-    pub fn new(context : Config::Context,
-               param : Config::Parameterization,
-               delegate : GenericProcessDelegate<Config::StepKind,Config::NodeKind,Config::Priorities>,
-               filters : Vec<Box<dyn AbstractFilter<Config::FilterCriterion,Config::FilterEliminationKind>>>,
-               loggers : Vec<Box< dyn AbstractProcessLogger<Config>>>,
-               goal : Option<Config::GlobalVerdict>,
-               is_memoized : bool) -> GenericProcessManager<Config> {
+    pub fn new(context : Conf::Context,
+               param : Conf::Parameterization,
+               delegate : GenericProcessDelegate<Conf::StepKind,Conf::NodeKind,Conf::Priorities>,
+               filters : Vec<Box<dyn AbstractFilter<Conf::FilterCriterion,Conf::FilterEliminationKind>>>,
+               loggers : Vec<Box< dyn AbstractProcessLogger<Conf>>>,
+               goal : Option<Conf::GlobalVerdict>,
+               is_memoized : bool) -> GenericProcessManager<Conf> {
 
-        let memoized : Option<HashMap<Config::NodeKind,u32>> = if is_memoized {
+        let memoized : Option<HashMap<Conf::NodeKind,u32>> = if is_memoized {
             Some(hashmap!{})
         } else {
             None
@@ -68,11 +68,11 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
             node_has_processed_child:hashset!{}}
     }
 
-    pub fn get_memoized(&self) -> &Option<HashMap<Config::NodeKind,u32>> {
+    pub fn get_memoized(&self) -> &Option<HashMap<Conf::NodeKind,u32>> {
         &self.memoized
     }
 
-    fn check_memo(memo : &HashMap<Config::NodeKind,u32>, to_look_up : &Config::NodeKind) -> Option<u32> {
+    fn check_memo(memo : &HashMap<Conf::NodeKind,u32>, to_look_up : &Conf::NodeKind) -> Option<u32> {
         for (memoized_node, memoized_node_id) in memo {
             if to_look_up.is_included_for_memoization(memoized_node) {
                 return Some(*memoized_node_id);
@@ -82,17 +82,17 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
     }
 
     pub fn start_process(&mut self,
-                         init_node_kind : Config::NodeKind)
-                -> (u32,Config::GlobalVerdict) {
+                         init_node_kind : Conf::NodeKind)
+                -> (u32,Conf::GlobalVerdict) {
 
         let mut next_node_id : u32 = 1;
         let mut node_counter : u32 = 0;
 
         self.loggers_initialize();
         self.loggers_parameterization();
-        self.loggers_new_node_added(next_node_id,&init_node_kind);
+        self.loggers_new_node(next_node_id,&init_node_kind);
 
-        let mut global_verdict = Config::GlobalVerdict::get_baseline_verdict();
+        let mut global_verdict = Conf::GlobalVerdict::get_baseline_verdict();
 
         match &mut self.memoized {
             None => {},
@@ -122,7 +122,7 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
                 // ***
                 let mut parent_node = self.delegate.pop_memorized_state(step_to_process.parent_id);
                 // ***
-                let criterion = Config::ProcessHandler::get_criterion(&self.context,
+                let criterion = Conf::ProcessHandler::get_criterion(&self.context,
                                                                       &self.param,
                                                                       &parent_node,
                                                                       &step_to_process,
@@ -136,7 +136,7 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
                                               &filter_elimination);
                     },
                     None => {
-                        let new_node_kind = Config::ProcessHandler::process_new_step(&self.context,
+                        let new_node_kind = Conf::ProcessHandler::process_new_step(&self.context,
                                                                                      &self.param,
                                                                                      &parent_node,
                                                                                      &step_to_process,
@@ -160,11 +160,12 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
                             None => {
                                 node_counter += 1;
 
-                                self.loggers_new_node_added(new_node_id,&new_node_kind);
-                                self.loggers_new_transition_added(step_to_process.parent_id,
+                                self.loggers_new_node(new_node_id,&new_node_kind);
+                                self.loggers_new_step(step_to_process.parent_id,
                                                                   new_node_id,
                                                                   &step_to_process.kind,
-                                                                  &new_node_kind);
+                                                                  &new_node_kind,
+                                                      child_depth);
 
                                 match self.enqueue_next_steps_from_current_node(new_node_id,
                                                                                 new_node_kind,
@@ -179,10 +180,11 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
                                 }
                             },
                             Some( memorized_node_id) => {
-                                self.loggers_new_transition_added(step_to_process.parent_id,
+                                self.loggers_new_step(step_to_process.parent_id,
                                                                   memorized_node_id,
                                                                   &step_to_process.kind,
-                                                                  &new_node_kind);
+                                                                  &new_node_kind,
+                                                      child_depth);
                             }
                         }
 
@@ -217,7 +219,7 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
     fn apply_filters(&self,
                      depth : u32,
                      node_counter : u32,
-                     criterion : &Config::FilterCriterion) -> Option<Config::FilterEliminationKind> {
+                     criterion : &Conf::FilterCriterion) -> Option<Conf::FilterEliminationKind> {
         for filter in &self.filters {
             match filter.apply_filter(depth,node_counter,criterion) {
                 None => {},
@@ -231,21 +233,21 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
 
     fn enqueue_next_steps_from_current_node(&mut self,
                                        current_node_id : u32,
-                                       current_node_kind : Config::NodeKind,
-                                       depth : u32) -> Option<Config::LocalVerdict> {
+                                       current_node_kind : Conf::NodeKind,
+                                       depth : u32) -> Option<Conf::LocalVerdict> {
         // ***
-        let (max_id_of_child, new_steps) = Config::ProcessHandler::collect_next_steps(&self.context,
+        let (max_id_of_child, new_steps) = Conf::ProcessHandler::collect_next_steps(&self.context,
                                                                                       &self.param,
                                                                                       current_node_id,
                                                                                       &current_node_kind);
         // ***
         if max_id_of_child > 0 {
 
-            let static_verdict = Config::ProcessHandler::get_local_verdict_from_static_analysis(&self.context,
+            let static_verdict = Conf::ProcessHandler::get_local_verdict_from_static_analysis(&self.context,
                                                                                          &self.param,
                                                                                          &current_node_kind);
 
-            if Config::ProcessHandler::pursue_process_after_static_verdict(&self.context,
+            if Conf::ProcessHandler::pursue_process_after_static_verdict(&self.context,
                                                                            &self.param,
                                                                            &static_verdict) {
                 let remaining_ids_to_process : HashSet<u32> = HashSet::from_iter((1..(max_id_of_child+1)).collect::<Vec<u32>>().iter().cloned() );
@@ -270,7 +272,7 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
             // notify loggers that a terminal node has been reached
             self.loggers_notify_terminal_node_reached(current_node_id);
             // ***
-            let local_verdict = Config::ProcessHandler::get_local_verdict_when_no_child(&self.context,
+            let local_verdict = Conf::ProcessHandler::get_local_verdict_when_no_child(&self.context,
                                                                                         &self.param,
                                                                                         &current_node_kind);
             self.loggers_verdict(current_node_id,&local_verdict);
@@ -291,9 +293,9 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
         }
     }
 
-    fn loggers_new_node_added(&mut self,
-                              new_node_id :u32,
-                              new_node : &Config::NodeKind) {
+    fn loggers_new_node(&mut self,
+                        new_node_id :u32,
+                        new_node : &Conf::NodeKind) {
         for logger in self.loggers.iter_mut() {
             logger.log_new_node(&self.context,
                                 &self.param,
@@ -302,24 +304,26 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
         }
     }
 
-    fn loggers_new_transition_added(&mut self,
-                                    origin_node_id :u32,
-                                    target_node_id : u32,
-                                    new_step : &Config::StepKind,
-                                    target_node : &Config::NodeKind) {
+    fn loggers_new_step(&mut self,
+                        origin_node_id :u32,
+                        target_node_id : u32,
+                        new_step : &Conf::StepKind,
+                        target_node : &Conf::NodeKind,
+                        target_depth : u32) {
         for logger in self.loggers.iter_mut() {
             logger.log_new_step(&self.context,
                                 &self.param,
                                 origin_node_id,
                                 target_node_id,
                                 new_step,
-                                target_node);
+                                target_node,
+                                target_depth);
         }
     }
 
     fn loggers_verdict(&mut self,
                        parent_node_id : u32,
-                       local_verdict : &Config::LocalVerdict) {
+                       local_verdict : &Conf::LocalVerdict) {
         for logger in self.loggers.iter_mut() {
             logger.log_verdict(&self.context,
                                &self.param,
@@ -348,7 +352,7 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
     fn loggers_filtered(&mut self,
                         parent_node_id : u32,
                         new_node_id : u32,
-                        elim_kind : &Config::FilterEliminationKind) {
+                        elim_kind : &Conf::FilterEliminationKind) {
         self.has_filtered_nodes = true;
         for logger in self.loggers.iter_mut() {
             logger.log_filtered(&self.context,
@@ -358,7 +362,7 @@ impl<Config : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf
         }
     }
 
-    fn loggers_terminate(&mut self, global_verdict : &Config::GlobalVerdict) {
+    fn loggers_terminate(&mut self, global_verdict : &Conf::GlobalVerdict) {
         for logger in self.loggers.iter_mut() {
             (*logger).log_terminate(global_verdict);
         }
