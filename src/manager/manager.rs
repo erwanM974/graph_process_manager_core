@@ -364,10 +364,12 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
     fn loggers_parameterization(&mut self) {
         let strategy = self.delegate.get_strategy();
         let priorities = self.delegate.get_priorities();
+        let use_memoization = self.memoized.is_some();
         for logger in self.loggers.iter_mut() {
             (*logger).log_parameterization(strategy,
-                                           &self.filters,
                                            priorities,
+                                           &self.filters,&self.goal,
+                                           use_memoization,
                                            &self.param);
         }
     }

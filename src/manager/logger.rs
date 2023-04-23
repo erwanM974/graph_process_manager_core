@@ -26,8 +26,10 @@ pub trait AbstractProcessLogger<Conf : AbstractProcessConfiguration> {
 
     fn log_parameterization(&mut self,
                             strategy : &QueueSearchStrategy,
-                            filters : &[Box<dyn AbstractFilter<Conf::FilterCriterion,Conf::FilterEliminationKind>>],
                             priorities : &GenericProcessPriorities<Conf::Priorities>,
+                            filters : &[Box<dyn AbstractFilter<Conf::FilterCriterion,Conf::FilterEliminationKind>>],
+                            goal : &Option<Conf::GlobalVerdict>,
+                            use_memoization : bool,
                             parameterization : &Conf::Parameterization);
 
     fn log_filtered(&mut self,
