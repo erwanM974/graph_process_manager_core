@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 use std::collections::{HashMap, HashSet};
+
 use crate::delegate::delegate::GenericProcessDelegate;
 use crate::delegate::node::GenericNode;
 use crate::handler::filter::AbstractFilter;
@@ -160,6 +161,10 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                             None => {
                                 node_counter += 1;
 
+                                if let Some(memo) = &mut self.memoized {
+                                    memo.insert(new_node_kind.clone(), new_node_id);
+                                }
+
                                 self.loggers_new_node(new_node_id,&new_node_kind);
                                 self.loggers_new_step(step_to_process.parent_id,
                                                                   new_node_id,
@@ -235,6 +240,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                                        current_node_id : u32,
                                        current_node_kind : Conf::NodeKind,
                                        depth : u32) -> Option<Conf::LocalVerdict> {
+        let mut current_node_kind = current_node_kind;
         // ***
         let (max_id_of_child, new_steps) = Conf::ProcessHandler::collect_next_steps(&self.context,
                                                                                       &self.param,
@@ -243,29 +249,39 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
         // ***
         if max_id_of_child > 0 {
 
-            let static_verdict = Conf::ProcessHandler::get_local_verdict_from_static_analysis(&self.context,
-                                                                                         &self.param,
-                                                                                         &current_node_kind);
+            let local_verdict : Option<Conf::LocalVerdict>;
+            let pursue_process : bool =
+            match Conf::ProcessHandler::get_local_verdict_from_static_analysis(&self.context,
+                                                                               &self.param,
+                                                                               &mut current_node_kind) {
+                None => {
+                    local_verdict = None;
+                    true
+                },
+                Some((static_verdict,proof_data)) => {
+                    self.loggers_verdict(current_node_id,&static_verdict, Some(proof_data));
+                    let pursue = Conf::ProcessHandler::pursue_process_after_static_verdict(&self.context,
+                                                                                           &self.param,
+                                                                                           &static_verdict);
+                    local_verdict = Some(static_verdict);
+                    pursue
+                }
+            };
 
-            if Conf::ProcessHandler::pursue_process_after_static_verdict(&self.context,
-                                                                           &self.param,
-                                                                           &static_verdict) {
+            if pursue_process {
                 let remaining_ids_to_process : HashSet<u32> = HashSet::from_iter((1..(max_id_of_child+1)).collect::<Vec<u32>>().iter().cloned() );
                 let generic_node = GenericNode::new(current_node_kind,remaining_ids_to_process,depth);
                 self.delegate.remember_state( current_node_id, generic_node );
                 self.delegate.enqueue_new_steps( current_node_id, new_steps );
-                // ***
-                None
             } else {
                 // for the HCS queue to know the node id'ed by parent_id is terminal
                 self.delegate.queue_set_last_reached_has_no_child();
                 // notify loggers that a terminal node has been reached
                 self.loggers_notify_terminal_node_reached(current_node_id);
                 //
-                self.loggers_verdict(current_node_id,&static_verdict);
-                // ***
-                Some(static_verdict)
             }
+
+            local_verdict
         } else {
             // for the HCS queue to know the node id'ed by parent_id is terminal
             self.delegate.queue_set_last_reached_has_no_child();
@@ -275,7 +291,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
             let local_verdict = Conf::ProcessHandler::get_local_verdict_when_no_child(&self.context,
                                                                                         &self.param,
                                                                                         &current_node_kind);
-            self.loggers_verdict(current_node_id,&local_verdict);
+            self.loggers_verdict(current_node_id, &local_verdict, None);
             // ***
             Some(local_verdict)
         }
@@ -323,12 +339,25 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
 
     fn loggers_verdict(&mut self,
                        parent_node_id : u32,
-                       local_verdict : &Conf::LocalVerdict) {
-        for logger in self.loggers.iter_mut() {
-            logger.log_verdict(&self.context,
-                               &self.param,
-                               parent_node_id,
-                               local_verdict);
+                       local_verdict : &Conf::LocalVerdict,
+                       proof : Option<Conf::StaticLocalVerdictAnalysisProof>) {
+        match proof {
+            None => {
+                for logger in self.loggers.iter_mut() {
+                    logger.log_verdict_on_no_child(&self.context,
+                                                   &self.param,
+                                                   parent_node_id,
+                                                   local_verdict);
+                }
+            },
+            Some(data) => {
+                for logger in self.loggers.iter_mut() {
+                    logger.log_verdict_on_static_analysis(&self.context,
+                                                          &self.param,
+                                                          parent_node_id,
+                                                          local_verdict,&data);
+                }
+            }
         }
     }
 

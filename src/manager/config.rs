@@ -32,6 +32,7 @@ pub trait AbstractProcessConfiguration : Sized {
     type FilterEliminationKind : std::string::ToString;
     // ***
     type LocalVerdict : std::string::ToString;
+    type StaticLocalVerdictAnalysisProof; // data justifying a local verdict being reached via a static analysis of the node
     type GlobalVerdict : AbstractGlobalVerdict<Self::LocalVerdict>;
     // ***
     type ProcessHandler : AbstractProcessHandler<Self>;

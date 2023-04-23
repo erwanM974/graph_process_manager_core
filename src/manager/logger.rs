@@ -51,11 +51,18 @@ pub trait AbstractProcessLogger<Conf : AbstractProcessConfiguration> {
                     target_node : &Conf::NodeKind,
                     target_depth : u32);
 
-    fn log_verdict(&mut self,
-                   context : &Conf::Context,
-                   param : &Conf::Parameterization,
-                   parent_node_id : u32,
-                   verdict : &Conf::LocalVerdict);
+    fn log_verdict_on_no_child(&mut self,
+                               context : &Conf::Context,
+                               param : &Conf::Parameterization,
+                               parent_node_id : u32,
+                               verdict : &Conf::LocalVerdict);
+
+    fn log_verdict_on_static_analysis(&mut self,
+                                      context : &Conf::Context,
+                                      param : &Conf::Parameterization,
+                                      parent_node_id : u32,
+                                      verdict : &Conf::LocalVerdict,
+                                      proof : &Conf::StaticLocalVerdictAnalysisProof);
 
     fn log_terminate(&mut self,
                      global_verdict : &Conf::GlobalVerdict);

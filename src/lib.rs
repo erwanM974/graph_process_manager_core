@@ -28,11 +28,9 @@ pub mod manager;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     #[test]
     fn it_works() {
-
+        //
     }
 }
 

@@ -47,7 +47,8 @@ pub trait AbstractProcessHandler<Conf : AbstractProcessConfiguration> {
 
     fn get_local_verdict_from_static_analysis(context : &Conf::Context,
                                               param : &Conf::Parameterization,
-                                              node_kind : &Conf::NodeKind) -> Conf::LocalVerdict;
+                                              node_kind : &mut Conf::NodeKind)
+            -> Option<(Conf::LocalVerdict,Conf::StaticLocalVerdictAnalysisProof)>;
 
     fn pursue_process_after_static_verdict(context : &Conf::Context,
                                            param : &Conf::Parameterization,
