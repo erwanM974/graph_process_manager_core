@@ -69,8 +69,8 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
             node_has_processed_child:hashset!{}}
     }
 
-    pub fn get_memoized(&self) -> &Option<HashMap<Conf::NodeKind,u32>> {
-        &self.memoized
+    pub fn get_logger(&self, logger_id : usize) -> Option<&Box< dyn AbstractProcessLogger<Conf>>> {
+        self.loggers.get(logger_id)
     }
 
     fn check_memo(memo : &HashMap<Conf::NodeKind,u32>, to_look_up : &Conf::NodeKind) -> Option<u32> {

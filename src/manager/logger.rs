@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+use std::any::Any;
 
 use crate::delegate::priorities::GenericProcessPriorities;
 use crate::handler::filter::AbstractFilter;
@@ -21,6 +22,8 @@ use crate::manager::config::AbstractProcessConfiguration;
 use crate::queued_steps::queue::strategy::QueueSearchStrategy;
 
 pub trait AbstractProcessLogger<Conf : AbstractProcessConfiguration> {
+
+    fn as_any(&self) -> &dyn Any;
 
     fn log_initialize(&mut self);
 
