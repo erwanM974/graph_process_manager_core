@@ -202,6 +202,9 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 if parent_node.remaining_ids_to_process.is_empty() {
                     let parent_had_at_least_one_processed_child = self.node_has_processed_child.remove(&step_to_process.parent_id);
                     if !parent_had_at_least_one_processed_child {
+                        // for the HCS queue to know the node id'ed by parent_id is terminal
+                        self.delegate.queue_set_last_reached_has_no_child();
+                        // notify loggers that a terminal node has been reached
                         self.loggers_notify_terminal_node_reached(step_to_process.parent_id);
                     }
                     self.loggers_notify_last_child_of_node_processed(step_to_process.parent_id);
