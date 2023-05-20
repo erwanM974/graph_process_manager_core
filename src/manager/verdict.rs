@@ -15,11 +15,9 @@ limitations under the License.
 */
 
 
+use std::fmt;
 
-
-
-
-pub trait AbstractGlobalVerdict<LocalVerdict> : Sized + std::string::ToString {
+pub trait AbstractGlobalVerdict<LocalVerdict> : Sized + fmt::Display {
 
     fn is_verdict_pertinent_for_process() -> bool;
 

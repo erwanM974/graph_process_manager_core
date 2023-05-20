@@ -15,23 +15,25 @@ limitations under the License.
 */
 
 
+use std::fmt;
+
 pub enum QueueSearchStrategy {
     BFS, // breadth first search
     DFS, // depth first search
     HCS  // high coverage search
 }
 
-impl std::string::ToString for QueueSearchStrategy {
-    fn to_string(&self) -> String {
+impl fmt::Display for QueueSearchStrategy {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             QueueSearchStrategy::BFS => {
-                "BreadthFirstSearch".to_string()
+                write!(f,"BreadthFirstSearch")
             },
             QueueSearchStrategy::DFS => {
-                "DepthFirstSearch".to_string()
+                write!(f,"DepthFirstSearch")
             },
             QueueSearchStrategy::HCS => {
-                "HighCoverageSearch".to_string()
+                write!(f,"HighCoverageSearch")
             }
         }
     }

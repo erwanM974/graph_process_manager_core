@@ -15,32 +15,31 @@ limitations under the License.
 */
 
 
+use std::fmt;
 
-
-
-pub trait AbstractPriorities<Step> : Sized + std::string::ToString {
+pub trait AbstractPriorities<Step> : Sized + fmt::Display {
 
     fn get_priority_of_step(&self, step : &Step) -> i32;
 
 }
 
-pub struct GenericProcessPriorities<Priorities : std::string::ToString> {
+pub struct GenericProcessPriorities<Priorities : fmt::Display> {
     pub specific : Priorities,
     pub randomize : bool
 }
 
-impl<Priorities : std::string::ToString> std::string::ToString for GenericProcessPriorities<Priorities> {
-    fn to_string(&self) -> String {
+impl<Priorities : fmt::Display> fmt::Display for GenericProcessPriorities<Priorities> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.randomize {
-            format!("randomize {}", self.specific.to_string())
+            write!(f,"randomize {}", self.specific)
         } else {
-            self.specific.to_string()
+            write!(f,"{}", self.specific)
         }
     }
 }
 
 
-impl<Priorities : std::string::ToString> GenericProcessPriorities<Priorities> {
+impl<Priorities : fmt::Display> GenericProcessPriorities<Priorities> {
     pub fn new(specific: Priorities, randomize: bool) -> Self {
         GenericProcessPriorities { specific, randomize }
     }

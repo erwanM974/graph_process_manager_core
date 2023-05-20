@@ -15,7 +15,9 @@ limitations under the License.
 */
 
 
+use std::fmt;
 use std::hash::Hash;
+
 use crate::delegate::priorities::AbstractPriorities;
 use crate::handler::handler::AbstractProcessHandler;
 use crate::manager::verdict::AbstractGlobalVerdict;
@@ -28,10 +30,10 @@ pub trait AbstractProcessConfiguration : Sized {
     type StepKind;
     type Priorities : AbstractPriorities<Self::StepKind>;
     // ***
-    type FilterCriterion : std::string::ToString;
-    type FilterEliminationKind : std::string::ToString;
+    type FilterCriterion : fmt::Display;
+    type FilterEliminationKind : fmt::Display;
     // ***
-    type LocalVerdict : std::string::ToString;
+    type LocalVerdict : fmt::Display;
     type StaticLocalVerdictAnalysisProof; // data justifying a local verdict being reached via a static analysis of the node
     type GlobalVerdict : AbstractGlobalVerdict<Self::LocalVerdict>;
     // ***

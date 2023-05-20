@@ -16,7 +16,9 @@ limitations under the License.
 
 
 
-pub trait AbstractFilter<Criterion,Elimination> : std::string::ToString {
+use std::fmt;
+
+pub trait AbstractFilter<Criterion,Elimination> : fmt::Display {
 
     fn apply_filter(&self,
                     depth : u32,
