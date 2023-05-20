@@ -23,6 +23,7 @@ use crate::handler::handler::AbstractProcessHandler;
 use crate::manager::config::{AbstractProcessConfiguration, AbstractNodeKind};
 use crate::manager::logger::AbstractProcessLogger;
 use crate::manager::verdict::AbstractGlobalVerdict;
+use crate::queued_steps::step::GenericStep;
 
 
 pub struct GenericProcessManager<Conf : AbstractProcessConfiguration> {
@@ -197,7 +198,6 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 }
                 // ***
                 parent_node.remaining_ids_to_process.remove(&step_to_process.id_as_child);
-
                 // ***
                 if parent_node.remaining_ids_to_process.is_empty() {
                     let parent_had_at_least_one_processed_child = self.node_has_processed_child.remove(&step_to_process.parent_id);
@@ -245,10 +245,14 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                                        depth : u32) -> Option<Conf::LocalVerdict> {
         let mut current_node_kind = current_node_kind;
         // ***
-        let (max_id_of_child, new_steps) = Conf::ProcessHandler::collect_next_steps(&self.context,
-                                                                                      &self.param,
-                                                                                      current_node_id,
-                                                                                      &current_node_kind);
+        let mut max_id_of_child = 0;
+        let mut to_enqueue = vec![];
+        for step_kind in Conf::ProcessHandler::collect_next_steps(&self.context,
+                                                                   &self.param,
+                                                                   &current_node_kind) {
+            max_id_of_child += 1;
+            to_enqueue.push( GenericStep::new(current_node_id, max_id_of_child, step_kind) );
+        }
         // ***
         if max_id_of_child > 0 {
 
@@ -275,7 +279,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 let remaining_ids_to_process : HashSet<u32> = HashSet::from_iter((1..(max_id_of_child+1)).collect::<Vec<u32>>().iter().cloned() );
                 let generic_node = GenericNode::new(current_node_kind,remaining_ids_to_process,depth);
                 self.delegate.remember_state( current_node_id, generic_node );
-                self.delegate.enqueue_new_steps( current_node_id, new_steps );
+                self.delegate.enqueue_new_steps( current_node_id, to_enqueue );
             } else {
                 // for the HCS queue to know the node id'ed by parent_id is terminal
                 self.delegate.queue_set_last_reached_has_no_child();

@@ -38,8 +38,7 @@ pub trait AbstractProcessHandler<Conf : AbstractProcessConfiguration> {
 
     fn collect_next_steps(context : &Conf::Context,
                           param : &Conf::Parameterization,
-                          parent_node_id : u32,
-                          parent_node_kind : &Conf::NodeKind) -> (u32,Vec<GenericStep<Conf::StepKind>>);
+                          parent_node_kind : &Conf::NodeKind) -> Vec<Conf::StepKind>;
 
     fn get_local_verdict_when_no_child(context : &Conf::Context,
                                        param : &Conf::Parameterization,
