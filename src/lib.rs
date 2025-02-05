@@ -20,10 +20,8 @@ extern crate maplit;
 
 extern crate rand;
 
-pub mod queued_steps;
-pub mod delegate;
-pub mod handler;
-pub mod manager;
+pub mod queue;
+pub mod process;
 
 
 #[cfg(test)]

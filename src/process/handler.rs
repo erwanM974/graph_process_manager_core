@@ -14,6 +14,22 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-pub mod delegate;
-pub mod priorities;
-pub mod node;
+
+
+use crate::process::config::AbstractProcessConfiguration;
+
+pub trait AbstractAlgorithmOperationHandler<Conf : AbstractProcessConfiguration> {
+
+    fn process_new_step(
+        context_and_param : &Conf::ContextAndParameterization,
+        parent_node : &Conf::DomainSpecificNode,
+        step_to_process : &Conf::DomainSpecificStep
+    ) -> Conf::DomainSpecificNode;
+
+    fn collect_next_steps(
+        context_and_param : &Conf::ContextAndParameterization,
+        parent_node : &Conf::DomainSpecificNode
+    ) -> Vec<Conf::DomainSpecificStep>;
+
+}
+

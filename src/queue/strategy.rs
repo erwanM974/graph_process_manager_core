@@ -17,6 +17,9 @@ limitations under the License.
 
 use std::fmt;
 
+use super::queue_kinds::{generic::AbstractStepsQueue, q_bfs::BfsStepsQueue, q_dfs::DfsStepsQueue, q_hcs::HcsStepsQueue};
+
+
 pub enum QueueSearchStrategy {
     BFS, // breadth first search
     DFS, // depth first search
@@ -39,3 +42,20 @@ impl fmt::Display for QueueSearchStrategy {
     }
 }
 
+impl QueueSearchStrategy {
+
+    pub(in crate::queue) fn create_process_queue<DomainSpecificStep : 'static>(&self) -> Box< dyn AbstractStepsQueue<DomainSpecificStep> > {
+        match self {
+            QueueSearchStrategy::BFS => {
+                Box::new(BfsStepsQueue::<DomainSpecificStep>::new() )
+            },
+            QueueSearchStrategy::DFS => {
+                Box::new(DfsStepsQueue::<DomainSpecificStep>::new() )
+            },
+            QueueSearchStrategy::HCS => {
+                Box::new(HcsStepsQueue::<DomainSpecificStep>::new() )
+            }
+        }
+    }
+
+}

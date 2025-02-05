@@ -14,19 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-
-use std::fmt;
-
-pub trait AbstractGlobalVerdict<LocalVerdict> : Sized + fmt::Display {
-
-    fn is_verdict_pertinent_for_process() -> bool;
-
-    fn get_baseline_verdict() -> Self;
-
-    fn update_with_local_verdict(self, local_verdict : &LocalVerdict) -> Self;
-
-    fn is_goal_reached(&self, goal : &Option<Self>) -> bool;
-
-    fn update_knowing_nodes_were_filtered_out(self, has_filtered_nodes : bool) -> Self;
-
-}
+pub mod config;
+pub mod filter;
+pub mod handler;
+pub mod identifier;
+pub mod logger;
+pub mod manager;
+pub mod node_memoizer;
+pub mod persistent_state;

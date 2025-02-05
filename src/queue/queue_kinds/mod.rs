@@ -14,11 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-pub mod strategy;
-
 pub mod generic;
-pub mod factory;
 
-mod q_bfs;
-mod q_dfs;
-mod q_hcs;
+pub mod q_bfs;
+pub mod q_dfs;
+pub mod q_hcs;

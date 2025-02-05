@@ -1,6 +1,6 @@
 [package]
 name = "graph_process_manager_core"
-version = "0.1.10"
+version = "0.2.0"
 authors = ["Erwan Mahe"]
 edition = "2021"
 
@@ -16,4 +16,4 @@ keywords = ["graph", "tree", "process", "traversal", "heuristics"]
 
 [dependencies]
 maplit = "1.0.2"                                # for !hashset macro etc
-rand = "0.8.5"                                  # random number generation e.g. for traversal random priorities
+rand = "0.9.0"                                  # random number generation e.g. for traversal random priorities

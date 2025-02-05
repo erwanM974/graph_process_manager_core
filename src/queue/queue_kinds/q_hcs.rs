@@ -17,18 +17,20 @@ limitations under the License.
 
 use std::collections::VecDeque;
 
-use crate::queued_steps::step::GenericStep;
-use crate::queued_steps::queue::generic::GenericProcessQueue;
+use crate::queue::queued_step::EnqueuedStep;
 
-pub struct HcsProcessQueue<T> {
-    queue : VecDeque< (u32,Vec<GenericStep<T>>) >,
+use super::generic::AbstractStepsQueue;
+
+
+pub struct HcsStepsQueue<DomainSpecificStep> {
+    queue : VecDeque< (u32,Vec<EnqueuedStep<DomainSpecificStep>>) >,
     last_reached_has_no_child : bool
 }
 
 
-impl<T> HcsProcessQueue<T> {
+impl<DomainSpecificStep> HcsStepsQueue<DomainSpecificStep> {
 
-    fn extract_dfs(&mut self) -> Option<(GenericStep<T>,Option<u32>)> {
+    fn extract_dfs(&mut self) -> Option<(EnqueuedStep<DomainSpecificStep>,Option<u32>)> {
         match self.queue.pop_back() {
             None => {
                 None
@@ -51,7 +53,7 @@ impl<T> HcsProcessQueue<T> {
         }
     }
 
-    fn extract_bfs(&mut self) -> Option<(GenericStep<T>,Option<u32>)> {
+    fn extract_bfs(&mut self) -> Option<(EnqueuedStep<DomainSpecificStep>,Option<u32>)> {
         match self.queue.pop_front() {
             None => {
                 None
@@ -76,14 +78,14 @@ impl<T> HcsProcessQueue<T> {
 
 }
 
-impl<T> GenericProcessQueue<T> for HcsProcessQueue<T> {
+impl<DomainSpecificStep> AbstractStepsQueue<DomainSpecificStep> for HcsStepsQueue<DomainSpecificStep> {
 
-    fn new() -> HcsProcessQueue<T> {
-        HcsProcessQueue{queue:VecDeque::new(),
+    fn new() -> Self {
+        Self{queue:VecDeque::new(),
             last_reached_has_no_child:true}
     }
 
-    fn dequeue(&mut self) -> Option<(GenericStep<T>,Option<u32>)> {
+    fn dequeue(&mut self) -> Option<(EnqueuedStep<DomainSpecificStep>,Option<u32>)> {
         match self.last_reached_has_no_child {
             true => {
                 self.last_reached_has_no_child = false;
@@ -96,9 +98,11 @@ impl<T> GenericProcessQueue<T> for HcsProcessQueue<T> {
     }
 
     fn enqueue(&mut self,
-                         parent_id : u32,
-                         to_enqueue : Vec<GenericStep<T>>) {
-        if !to_enqueue.is_empty() {
+                parent_id : u32,
+                to_enqueue : Vec<EnqueuedStep<DomainSpecificStep>>) {
+        if to_enqueue.is_empty() {
+            self.last_reached_has_no_child = true;
+        } else {
             self.queue.push_back( (parent_id,to_enqueue) );
         }
     }
@@ -106,6 +110,5 @@ impl<T> GenericProcessQueue<T> for HcsProcessQueue<T> {
     fn set_last_reached_has_no_child(&mut self) {
         self.last_reached_has_no_child = true;
     }
-
 }
 

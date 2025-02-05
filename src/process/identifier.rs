@@ -15,17 +15,29 @@ limitations under the License.
 */
 
 
-
-pub struct GenericStep<T> {
-    pub parent_id : u32,
-    pub id_as_child : u32,
-    pub kind : T
+/** 
+ * Generator to have unique identifier for:
+ * - all nodes of the graph structure
+ * - all the filtration results
+ * **/
+pub struct UniqueIdentifierGenerator {
+    next : u32 
 }
 
-impl<T> GenericStep<T> {
-    pub fn new(parent_id : u32,
-               id_as_child : u32,
-               kind : T) -> GenericStep<T> {
-        GenericStep{parent_id,id_as_child,kind}
+
+impl UniqueIdentifierGenerator {
+
+    pub fn new() -> Self {
+        Self{next:1}
     }
+
+    pub fn get_next(&mut self) -> u32 {
+        let next_id = self.next;
+        self.next += 1;
+        next_id
+    }
+
 }
+
+
+

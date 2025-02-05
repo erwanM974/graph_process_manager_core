@@ -15,14 +15,9 @@ limitations under the License.
 */
 
 
-
-use std::fmt;
-
-pub trait AbstractFilter<Criterion,Elimination> : fmt::Display {
-
-    fn apply_filter(&self,
-                    depth : u32,
-                    node_counter : u32,
-                    criterion : &Criterion) -> Option<Elimination>;
-
-}
+pub(crate) mod delegate;
+pub mod memorized_node;
+pub mod priorities;
+pub mod queued_step;
+pub(in crate::queue) mod queue_kinds;
+pub mod strategy;
