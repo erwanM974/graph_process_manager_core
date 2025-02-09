@@ -209,7 +209,8 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 );
                 // now, if the memoization option is active,
                 // we check if this node has already been reached previously
-                let (successor_node_id,warrants_termination) = match self.node_memoizer.check_memo(&successor_node) {
+                // and return the id of the successor node
+                let (successor_node_id,check_termination) = match self.node_memoizer.check_memo(&successor_node) {
                     Some(memoized_node_id) => {
                         // here the sucessor node is already known and memoized, so we return its unique id
                         // also because the global state is not updated, termination is not warranted
@@ -219,12 +220,9 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                         // here the successor node is entirely new
                         // so we create a new unique identifier
                         let new_node_id = self.identifier_generator.get_next();
-                        // and we process it further
-                        let warrants_termination = self.process_new_node_and_check_termination(
-                            successor_node,
-                            new_node_id
-                        );
-                        (new_node_id,warrants_termination)
+                        // here the fact that we have a new node
+                        // requires us to check termination
+                        (new_node_id,true)
                     },
                 };
                 // now that we have the "successor_node_id", we can log the new step
@@ -233,8 +231,20 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                     &self.context_and_param,
                     step_to_process.parent_node_id,
                     &step_to_process.domain_specific_step,
-                    successor_node_id
+                    successor_node_id,
+                    &successor_node
                 );
+                // ***
+                let warrants_termination = if check_termination {
+                    // here we process the new node further
+                    // and incidentally check termination
+                    self.process_new_node_and_check_termination(
+                        successor_node,
+                        successor_node_id
+                    )
+                } else {
+                    false
+                };
                 // and we propagate "warrants_termination"
                 warrants_termination
             }

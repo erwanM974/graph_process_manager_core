@@ -64,7 +64,8 @@ pub trait AbstractProcessLogger<Conf : AbstractProcessConfiguration> {
         context_and_param : &Conf::ContextAndParameterization,
         origin_node_id : u32,
         step : &Conf::DomainSpecificStep,
-        target_node_id : u32
+        target_node_id : u32,
+        target_node : &Conf::DomainSpecificNode
     );
 
     /** 
@@ -166,14 +167,16 @@ pub(crate) fn loggers_new_step<Conf : AbstractProcessConfiguration>(
     context_and_param : &Conf::ContextAndParameterization,
     origin_node_id : u32,
     step : &Conf::DomainSpecificStep,
-    target_node_id : u32
+    target_node_id : u32,
+    target_node : &Conf::DomainSpecificNode
 ) {
     for logger in loggers_iter {
         logger.log_new_step(
             context_and_param,
             origin_node_id,
             step,
-            target_node_id
+            target_node_id,
+            target_node
         );
     }
 }
