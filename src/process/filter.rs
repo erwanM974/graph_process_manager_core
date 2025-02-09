@@ -34,7 +34,7 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
     /** 
      * Returns a title describing the filter.
      * **/
-    fn get_filter_description(&self) -> &str;
+    fn get_filter_description(&self) -> String;
 
 }
 
@@ -57,7 +57,7 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
     /** 
      * Returns a title describing the filter.
      * **/
-    fn get_filter_description(&self) -> &str;
+    fn get_filter_description(&self) -> String;
 
 }
 
@@ -80,7 +80,7 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
     /** 
      * Returns a title describing the filter.
      * **/
-    fn get_filter_description(&self) -> &str;
+    fn get_filter_description(&self) -> String;
 
 }
 
