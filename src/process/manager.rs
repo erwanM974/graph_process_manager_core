@@ -101,6 +101,10 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
         
         let warrants_termination = {
             let new_node_id = self.identifier_generator.get_next();
+            self.pre_process_new_node(
+                &initial_node,
+                new_node_id
+            );
             self.process_new_node_and_check_termination(
                 initial_node,
                 new_node_id
@@ -154,6 +158,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
             &self.context_and_param,
             &self.global_state
         );
+
     }
 
     
@@ -220,6 +225,11 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                         // here the successor node is entirely new
                         // so we create a new unique identifier
                         let new_node_id = self.identifier_generator.get_next();
+                        // we pre-process the new node
+                        self.pre_process_new_node(
+                            &successor_node,
+                            new_node_id
+                        );
                         // here the fact that we have a new node
                         // requires us to check termination
                         (new_node_id,true)
@@ -269,12 +279,17 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
     }
 
 
-
-    fn process_new_node_and_check_termination(
+    /** 
+     * We preprocess the new node that it to be considered.
+     * We separate this code from "process_new_node_and_check_termination"
+     * so that we may only use a reference to the new node
+     * and notify the loggers of the new node
+     * before notifying the loggers of the new step between the parent node and this new node
+     * **/
+    fn pre_process_new_node(
         &mut self,
-        new_node : Conf::DomainSpecificNode,
-        new_node_id : u32
-    ) -> bool {
+        new_node : &Conf::DomainSpecificNode,
+        new_node_id : u32) {
         // we notify the memoizer of the new node (actually memoizes only if the memoizer is active)
         self.node_memoizer.memoize_new_node(&new_node,new_node_id);
         // we notify the loggers of the new node
@@ -289,6 +304,14 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
             &self.context_and_param,
             &new_node
         );
+    }
+
+
+    fn process_new_node_and_check_termination(
+        &mut self,
+        new_node : Conf::DomainSpecificNode,
+        new_node_id : u32
+    ) -> bool {
         // updating the global state may warrant termination
         if self.global_state.warrants_termination_of_the_process(&self.context_and_param) {
             return true;
@@ -366,11 +389,12 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                         (true,warrants_termination)
                     },
                     None => {
+                        let warrants_termination = false;
                         // here no node post filters were activated
                         // this means we can enqueue all these next steps
                         // if there are any
-                        if next_steps.is_empty() {
-                            (true,false)
+                        let has_no_children = if next_steps.is_empty() {
+                            true
                         } else {
                             let mut to_enqueue = vec![];
                             let mut max_id_of_child = 0;
@@ -394,8 +418,9 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                                 new_node_id,
                                 to_enqueue
                             );
-                            (false,true)
-                        }
+                            false
+                        };
+                        (has_no_children,warrants_termination)
                     }
                 }
             }
