@@ -245,7 +245,8 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                     &successor_node
                 );
                 // ***
-                let warrants_termination = if check_termination {
+                // and we propagate "warrants_termination"
+                if check_termination {
                     // here we process the new node further
                     // and incidentally check termination
                     self.process_new_node_and_check_termination(
@@ -254,9 +255,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                     )
                 } else {
                     false
-                };
-                // and we propagate "warrants_termination"
-                warrants_termination
+                }
             }
         };
         // ***
@@ -291,18 +290,18 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
         new_node : &Conf::DomainSpecificNode,
         new_node_id : u32) {
         // we notify the memoizer of the new node (actually memoizes only if the memoizer is active)
-        self.node_memoizer.memoize_new_node(&new_node,new_node_id);
+        self.node_memoizer.memoize_new_node(new_node,new_node_id);
         // we notify the loggers of the new node
         loggers_new_node(
             self.loggers.iter_mut(),
             &self.context_and_param, 
             new_node_id, 
-            &new_node
+            new_node
         );
         // we update the global state
         self.global_state.update_on_node_reached(
             &self.context_and_param,
-            &new_node
+            new_node
         );
     }
 
