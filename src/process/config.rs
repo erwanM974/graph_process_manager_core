@@ -104,11 +104,11 @@ pub trait AbstractContextAndParameterization {
     /** 
      * Returns a title describing the whole process.
      * **/
-    fn get_process_description(&self) -> String;
+    fn get_process_description(&self) -> &str;
 
     /** 
      * Returns the description of individual relevant parameters.
      * **/
-    fn get_parameters_description(&self) -> Vec<String>;
+    fn get_parameters_description(&self) -> Vec<&str>;
 
 }

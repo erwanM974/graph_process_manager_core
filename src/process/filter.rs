@@ -31,6 +31,11 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
         node : &Conf::DomainSpecificNode
     ) -> Option<Conf::FiltrationResult>;
 
+    /** 
+     * Returns a title describing the filter.
+     * **/
+    fn get_filter_description(&self) -> &str;
+
 }
 
 
@@ -49,6 +54,11 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
         next_steps : &[Conf::DomainSpecificStep]
     ) -> Option<Conf::FiltrationResult>;
 
+    /** 
+     * Returns a title describing the filter.
+     * **/
+    fn get_filter_description(&self) -> &str;
+
 }
 
 
@@ -66,6 +76,11 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
         parent_node : &Conf::DomainSpecificNode,
         step : &Conf::DomainSpecificStep
     ) -> Option<Conf::FiltrationResult>;
+
+    /** 
+     * Returns a title describing the filter.
+     * **/
+    fn get_filter_description(&self) -> &str;
 
 }
 
