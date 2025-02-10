@@ -25,6 +25,7 @@ pub trait AbstractPriorities<DomainSpecificStep> : Sized {
      * **/
     fn get_priority_of_step(&self, domain_specific_step : &DomainSpecificStep) -> i32;
 
+    fn get_description(&self) -> String;
 }
 
 /** 
