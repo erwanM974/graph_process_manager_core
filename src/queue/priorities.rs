@@ -15,12 +15,10 @@ limitations under the License.
 */
 
 
-use std::fmt;
-
 /** 
  * A trait to implement custom prioritization in the order of evaluation of the next steps that may be taken from the same node.
  * **/
-pub trait AbstractPriorities<DomainSpecificStep> : Sized + fmt::Display {
+pub trait AbstractPriorities<DomainSpecificStep> : Sized {
 
     /** 
      * Returns an integer score that indicate the prioirity of a specific step.
@@ -35,23 +33,15 @@ pub trait AbstractPriorities<DomainSpecificStep> : Sized + fmt::Display {
  * - the steps are then reordered as per these scores
  * - for steps with the same score, we may or may not shuffle them randomly
  * **/
-pub struct GenericProcessPriorities<Priorities : fmt::Display> {
+pub struct GenericProcessPriorities<Priorities> {
     pub domain_specific : Priorities,
     pub randomize : bool
 }
 
-impl<Priorities : fmt::Display> fmt::Display for GenericProcessPriorities<Priorities> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.randomize {
-            write!(f,"randomize {}", self.domain_specific)
-        } else {
-            write!(f,"{}", self.domain_specific)
-        }
-    }
-}
 
 
-impl<Priorities : fmt::Display> GenericProcessPriorities<Priorities> {
+
+impl<Priorities> GenericProcessPriorities<Priorities> {
     pub fn new(domain_specific: Priorities, randomize: bool) -> Self {
         GenericProcessPriorities { domain_specific, randomize }
     }
