@@ -38,15 +38,15 @@ use super::node_memoizer::NodeMemoizer;
  * Entity responsible of the execution of the overall process.
  * **/
 pub struct GenericProcessManager<Conf : AbstractProcessConfiguration> {
-    context_and_param : Conf::ContextAndParameterization,
+    pub context_and_param : Conf::ContextAndParameterization,
     // ***
     delegate : ProcessQueueDelegate<Conf::DomainSpecificStep,Conf::DomainSpecificNode,Conf::Priorities>,
     // ***
-    global_state : Conf::MutablePersistentState,
+    pub global_state : Conf::MutablePersistentState,
     // ***
     filters_manager : GenericFiltersManager<Conf>,
     // ***
-    loggers : Vec<Box< dyn AbstractProcessLogger<Conf>>>,
+    pub loggers : Vec<Box< dyn AbstractProcessLogger<Conf>>>,
     // ***
     node_memoizer : NodeMemoizer<Conf>,
     // ***
@@ -355,6 +355,12 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 let next_steps = Conf::AlgorithmOperationHandler::collect_next_steps(
                     &self.context_and_param,
                     &new_node
+                );
+                // we update the global state
+                self.global_state.update_on_next_steps_collected_reached(
+                    &self.context_and_param, 
+                    &new_node, 
+                    &next_steps,
                 );
                 // we apply the node post filters
                 match self.filters_manager.apply_node_post_filters(

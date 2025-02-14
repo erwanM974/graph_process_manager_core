@@ -24,8 +24,6 @@ pub trait AbstractPriorities<DomainSpecificStep> : Sized {
      * Returns an integer score that indicate the prioirity of a specific step.
      * **/
     fn get_priority_of_step(&self, domain_specific_step : &DomainSpecificStep) -> i32;
-
-    fn get_description(&self) -> Vec<String>;
     
 }
 

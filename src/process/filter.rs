@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+use std::any::Any;
+
 use super::config::AbstractProcessConfiguration;
 
 
@@ -24,17 +26,14 @@ use super::config::AbstractProcessConfiguration;
  * **/
 pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
 
+    fn as_any(&self) -> &dyn Any;
+
     fn apply_filter(
         &self,
         context_and_param : &Conf::ContextAndParameterization,
         global_state : &Conf::MutablePersistentState,
         node : &Conf::DomainSpecificNode
     ) -> Option<Conf::FiltrationResult>;
-
-    /** 
-     * Returns a title describing the filter.
-     * **/
-    fn get_filter_description(&self) -> String;
 
 }
 
@@ -46,6 +45,8 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
  * **/
  pub trait AbstractNodePostFilter<Conf : AbstractProcessConfiguration> {
 
+    fn as_any(&self) -> &dyn Any;
+
     fn apply_filter(
         &self,
         context_and_param : &Conf::ContextAndParameterization,
@@ -53,11 +54,6 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
         node : &Conf::DomainSpecificNode,
         next_steps : &[Conf::DomainSpecificStep]
     ) -> Option<Conf::FiltrationResult>;
-
-    /** 
-     * Returns a title describing the filter.
-     * **/
-    fn get_filter_description(&self) -> String;
 
 }
 
@@ -69,6 +65,8 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
  * **/
  pub trait AbstractStepFilter<Conf : AbstractProcessConfiguration> {
 
+    fn as_any(&self) -> &dyn Any;
+
     fn apply_filter(
         &self,
         context_and_param : &Conf::ContextAndParameterization,
@@ -76,11 +74,6 @@ pub trait AbstractNodePreFilter<Conf : AbstractProcessConfiguration> {
         parent_node : &Conf::DomainSpecificNode,
         step : &Conf::DomainSpecificStep
     ) -> Option<Conf::FiltrationResult>;
-
-    /** 
-     * Returns a title describing the filter.
-     * **/
-    fn get_filter_description(&self) -> String;
 
 }
 

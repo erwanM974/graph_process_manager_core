@@ -78,7 +78,7 @@ use super::{handler::AbstractAlgorithmOperationHandler, persistent_state::Abstra
  * **/
 pub trait AbstractProcessConfiguration : Sized {
     // ***
-    type ContextAndParameterization : AbstractContextAndParameterization;
+    type ContextAndParameterization;
     type AlgorithmOperationHandler : AbstractAlgorithmOperationHandler<Self>;
     // ***
     type DomainSpecificNode : AbstractNodeKind;
@@ -96,19 +96,5 @@ pub trait AbstractProcessConfiguration : Sized {
 pub trait AbstractNodeKind : Sized + Clone + PartialEq + Eq + Hash {
 
     fn is_included_for_memoization(&self, memoized_node : &Self) -> bool;
-
-}
-
-pub trait AbstractContextAndParameterization {
-
-    /** 
-     * Returns a title describing the whole process.
-     * **/
-    fn get_process_description(&self) -> String;
-
-    /** 
-     * Returns the description of individual relevant parameters.
-     * **/
-    fn get_parameters_description(&self) -> Vec<String>;
 
 }
