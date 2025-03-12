@@ -209,6 +209,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 // thus we process it to get the successor node
                 let successor_node = Conf::AlgorithmOperationHandler::process_new_step(
                     &self.context_and_param,
+                    &mut self.global_state,
                     &parent_node.domain_specific_node,
                     &step_to_process.domain_specific_step
                 );
@@ -354,6 +355,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 // so we can collect the next steps that may be fired from that node
                 let next_steps = Conf::AlgorithmOperationHandler::collect_next_steps(
                     &self.context_and_param,
+                    &self.global_state,
                     &new_node
                 );
                 // we update the global state
