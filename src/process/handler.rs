@@ -24,12 +24,12 @@ pub trait AbstractAlgorithmOperationHandler<Conf : AbstractProcessConfiguration>
         context_and_param : &Conf::ContextAndParameterization,
         global_state : &mut Conf::MutablePersistentState,
         parent_node : &Conf::DomainSpecificNode,
-        step_to_process : &Conf::DomainSpecificStep
+        step_to_process : &mut Conf::DomainSpecificStep
     ) -> Conf::DomainSpecificNode;
 
     fn collect_next_steps(
         context_and_param : &Conf::ContextAndParameterization,
-        global_state : &Conf::MutablePersistentState,
+        global_state : &mut Conf::MutablePersistentState,
         parent_node : &Conf::DomainSpecificNode
     ) -> Vec<Conf::DomainSpecificStep>;
 

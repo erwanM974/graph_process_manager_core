@@ -25,11 +25,13 @@ pub struct UniqueIdentifierGenerator {
 }
 
 
-impl UniqueIdentifierGenerator {
-
-    pub fn new() -> Self {
-        Self{next:1}
+impl std::default::Default for UniqueIdentifierGenerator {
+    fn default() -> Self {
+        Self { next: 1 }
     }
+}
+
+impl UniqueIdentifierGenerator {
 
     pub fn get_next(&mut self) -> u32 {
         let next_id = self.next;

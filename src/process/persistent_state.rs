@@ -32,7 +32,8 @@ pub trait AbstractProcessMutablePersistentState<Conf : AbstractProcessConfigurat
      * Initializes the global state at the start of the process.
      * **/
     fn get_initial_state(
-        context_and_param : &Conf::ContextAndParameterization
+        context_and_param : &Conf::ContextAndParameterization,
+        initial_node : &Conf::DomainSpecificNode
     ) -> Self;
 
     /** 

@@ -34,6 +34,39 @@ use super::logger::*;
 use super::node_memoizer::NodeMemoizer;
 
 
+
+/** 
+ * Keeps track of the internal state (not domain-specific) of the process.
+ * **/
+pub(crate) struct ProcessManagerInternalStateManager<Conf : AbstractProcessConfiguration> {
+    /// before the process starts, the initial node is kept in an Option
+    pub initial_node_if_not_yet_started : Option<Conf::DomainSpecificNode>,
+    /// this generator guarantees uniqueness of the identifiers of the nodes
+    pub identifier_generator : UniqueIdentifierGenerator,
+    /// keeps track of nodes that have at least one child
+    /// this is used for the HCS queue and "loggers_notify_last_child_step_of_node_processed"
+    /// once all the children have been processed this is garbage collected 
+    pub node_has_processed_child_tracker : HashSet<u32>,
+    /// for memoizing nodes and exploring the process as a graph instead of a tree
+    pub node_memoizer : NodeMemoizer<Conf>,
+}
+
+impl<Conf: AbstractProcessConfiguration> ProcessManagerInternalStateManager<Conf> {
+    pub fn new(
+        initial_node: Conf::DomainSpecificNode, 
+        node_memoizer: NodeMemoizer<Conf>
+    ) -> Self {
+        Self { 
+            initial_node_if_not_yet_started : Some(initial_node), 
+            identifier_generator : UniqueIdentifierGenerator::default(),
+            node_has_processed_child_tracker : HashSet::new(),
+            node_memoizer 
+        }
+    }
+}
+
+
+
 /** 
  * Entity responsible of the execution of the overall process.
  * **/
@@ -48,11 +81,7 @@ pub struct GenericProcessManager<Conf : AbstractProcessConfiguration> {
     // ***
     pub loggers : Vec<Box< dyn AbstractProcessLogger<Conf>>>,
     // ***
-    node_memoizer : NodeMemoizer<Conf>,
-    // ***
-    identifier_generator : UniqueIdentifierGenerator,
-    // ***
-    node_has_processed_child_tracker : HashSet<u32>
+    internal_state : ProcessManagerInternalStateManager<Conf>
 }
 
 
@@ -65,18 +94,24 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
         priorities: GenericProcessPriorities<Conf::Priorities>,
         filters_manager : GenericFiltersManager<Conf>,
         loggers : Vec<Box< dyn AbstractProcessLogger<Conf>>>,
-        is_memoized : bool
+        is_memoized : bool,
+        initial_node : Conf::DomainSpecificNode
     ) -> GenericProcessManager<Conf> {
-        let initial_global_state = Conf::MutablePersistentState::get_initial_state(&context_and_param);
+        let initial_global_state = Conf::MutablePersistentState::get_initial_state(
+            &context_and_param,
+            &initial_node
+        );
+        let internal_state = ProcessManagerInternalStateManager::new(
+            initial_node, 
+            NodeMemoizer::new(is_memoized)
+        );
         GenericProcessManager{
             context_and_param,
             delegate : ProcessQueueDelegate::new(strategy, priorities),
             global_state : initial_global_state,
             filters_manager,
             loggers,
-            node_memoizer : NodeMemoizer::new(is_memoized),
-            identifier_generator : UniqueIdentifierGenerator::new(),
-            node_has_processed_child_tracker : HashSet::new()
+            internal_state
         }
     }
 
@@ -85,9 +120,12 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
     }
 
     pub fn start_process(
-        &mut self,
-        initial_node : Conf::DomainSpecificNode
-    ) {
+        &mut self
+    ) -> bool {
+
+        if self.internal_state.initial_node_if_not_yet_started.is_none() {
+            return false;
+        }
 
         loggers_initialize(
             self.loggers.iter_mut(),
@@ -96,11 +134,13 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
             self.delegate.get_priorities(),
             &self.filters_manager,
             &self.global_state,
-            self.node_memoizer.is_memoized()
+            self.internal_state.node_memoizer.is_memoized()
         );
+
+        let initial_node = self.internal_state.initial_node_if_not_yet_started.take().unwrap();
         
         let warrants_termination = {
-            let new_node_id = self.identifier_generator.get_next();
+            let new_node_id = self.internal_state.identifier_generator.get_next();
             self.pre_process_new_node(
                 &initial_node,
                 new_node_id
@@ -159,6 +199,8 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
             &self.global_state
         );
 
+        // the process has terminated successfully
+        true 
     }
 
     
@@ -168,6 +210,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
         step_to_process : EnqueuedStep<Conf::DomainSpecificStep>,
         parent_node : &MemorizedNode<Conf::DomainSpecificNode>
     ) -> bool {
+        let mut step_to_process = step_to_process;
         // apply the step filters
         let warrants_termination = match self.filters_manager.apply_step_filters(
             &self.context_and_param,
@@ -180,7 +223,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 // this means that we won't explore further the successors from this specific step
                 // ***
                 // below we notify the loggers
-                let filtration_result_id = self.identifier_generator.get_next();
+                let filtration_result_id = self.internal_state.identifier_generator.get_next();
                 loggers_filtered(
                     self.loggers.iter_mut(), 
                     &self.context_and_param,
@@ -203,7 +246,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 // because we can process it, this means that the parent node of the step (from which the step is fired)
                 // is guaranteed to have at least one child
                 // thus we update the tracker
-                self.node_has_processed_child_tracker.insert(step_to_process.id_as_potential_step_from_parent);
+                self.internal_state.node_has_processed_child_tracker.insert(step_to_process.id_as_potential_step_from_parent);
                 // ***
                 // processing the step yields a successor node
                 // thus we process it to get the successor node
@@ -211,12 +254,12 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                     &self.context_and_param,
                     &mut self.global_state,
                     &parent_node.domain_specific_node,
-                    &step_to_process.domain_specific_step
+                    &mut step_to_process.domain_specific_step
                 );
                 // now, if the memoization option is active,
                 // we check if this node has already been reached previously
                 // and return the id of the successor node
-                let (successor_node_id,check_termination) = match self.node_memoizer.check_memo(&successor_node) {
+                let (successor_node_id,check_termination) = match self.internal_state.node_memoizer.check_memo(&successor_node) {
                     Some(memoized_node_id) => {
                         // here the sucessor node is already known and memoized, so we return its unique id
                         // also because the global state is not updated, termination is not warranted
@@ -225,7 +268,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                     None => {
                         // here the successor node is entirely new
                         // so we create a new unique identifier
-                        let new_node_id = self.identifier_generator.get_next();
+                        let new_node_id = self.internal_state.identifier_generator.get_next();
                         // we pre-process the new node
                         self.pre_process_new_node(
                             &successor_node,
@@ -261,7 +304,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
         };
         // ***
         if parent_node.remaining_child_steps_ids_to_process.is_empty() {
-            let parent_had_at_least_one_processed_child = self.node_has_processed_child_tracker.remove(
+            let parent_had_at_least_one_processed_child = self.internal_state.node_has_processed_child_tracker.remove(
                 &step_to_process.id_as_potential_step_from_parent
             );
             if !parent_had_at_least_one_processed_child {
@@ -291,7 +334,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
         new_node : &Conf::DomainSpecificNode,
         new_node_id : u32) {
         // we notify the memoizer of the new node (actually memoizes only if the memoizer is active)
-        self.node_memoizer.memoize_new_node(new_node,new_node_id);
+        self.internal_state.node_memoizer.memoize_new_node(new_node,new_node_id);
         // we notify the loggers of the new node
         loggers_new_node(
             self.loggers.iter_mut(),
@@ -331,7 +374,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 // this means that we won't explore further the successors from this specific node
                 // ***
                 // below we notify the loggers of the filtration
-                let filtration_result_id = self.identifier_generator.get_next();
+                let filtration_result_id = self.internal_state.identifier_generator.get_next();
                 loggers_filtered(
                     self.loggers.iter_mut(), 
                     &self.context_and_param,
@@ -355,7 +398,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                 // so we can collect the next steps that may be fired from that node
                 let next_steps = Conf::AlgorithmOperationHandler::collect_next_steps(
                     &self.context_and_param,
-                    &self.global_state,
+                    &mut self.global_state,
                     &new_node
                 );
                 // we update the global state
@@ -376,7 +419,7 @@ impl<Conf : 'static + AbstractProcessConfiguration> GenericProcessManager<Conf> 
                         // this means that we won't explore further the successors from this specific node
                         // ***
                         // below we notify the loggers of the filtration
-                        let filtration_result_id = self.identifier_generator.get_next();
+                        let filtration_result_id = self.internal_state.identifier_generator.get_next();
                         loggers_filtered(
                             self.loggers.iter_mut(), 
                             &self.context_and_param,
